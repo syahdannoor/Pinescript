@@ -1,0 +1,73 @@
+//@version=5
+indicator(title="BBICHISAR", shorttitle="BBICHISAR", overlay=true)
+
+// ----------------------- Ichimoku Cloud Inputs -----------------------
+showIchimoku = input.bool(true, title="Show Ichimoku Cloud")
+showOnlyBaseLine = input.bool(false, title="Show Only Ichimoku Base Line")
+conversionPeriods = input.int(9, title="Ichimoku Conversion Line Length")
+basePeriods = input.int(26, title="Ichimoku Base Line Length")
+laggingSpan2Periods = input.int(52, title="Ichimoku Leading Span B Length")
+displacement = input.int(26, title="Ichimoku Displacement")
+
+// ----------------------- Bollinger Bands Inputs -----------------------
+showBollinger = input.bool(true, title="Show Bollinger Bands")
+showOnlyBands = input.bool(false, title="Show Only Bollinger Bands")
+bbLength = input.int(20, title="Bollinger Bands Length")
+bbStdDev = input.float(2.0, title="Bollinger Bands StdDev")
+
+// ----------------------- Parabolic SAR Inputs -----------------------
+showSAR = input.bool(true, title="Show Parabolic SAR")
+sarStart = input.float(0.02, title="Parabolic SAR Start")
+sarIncrement = input.float(0.02, title="Parabolic SAR Increment")
+sarMax = input.float(0.2, title="Parabolic SAR Max")
+
+// ----------------------- Ichimoku Cloud Calculation -----------------------
+donchian(len) => math.avg(ta.lowest(len), ta.highest(len))
+conversionLine = donchian(conversionPeriods)
+baseLine = donchian(basePeriods)
+leadLine1 = math.avg(conversionLine, baseLine)
+leadLine2 = donchian(laggingSpan2Periods)
+
+// Determine Base Line color based on price crossing
+var color baseLineColor = color.red // Default color
+if ta.crossover(close, baseLine)
+    baseLineColor := color.green
+else if ta.crossunder(close, baseLine)
+    baseLineColor := color.red
+
+// Plot Ichimoku Cloud
+plot(showIchimoku and not showOnlyBaseLine ? conversionLine : na, color=color.blue, title="Ichimoku Conversion Line")
+plot(showIchimoku and not showOnlyBaseLine ? baseLine : na, color=baseLineColor, title="Ichimoku Base Line")
+p1 = plot(showIchimoku and not showOnlyBaseLine ? leadLine1 : na, offset=displacement, color=color.green, title="Ichimoku Leading Span A")
+p2 = plot(showIchimoku and not showOnlyBaseLine ? leadLine2 : na, offset=displacement, color=color.red, title="Ichimoku Leading Span B")
+
+fill(p1, p2, color=leadLine1 > leadLine2 ? color.new(color.green, 90) : color.new(color.red, 90), title="Ichimoku Cloud")
+
+// Plot Base Line when only showing it
+plot(showIchimoku and showOnlyBaseLine ? baseLine : na, color=baseLineColor, title="Ichimoku Base Line Only")
+
+// ----------------------- Bollinger Bands Calculation -----------------------
+basis = ta.sma(close, bbLength)
+dev = bbStdDev * ta.stdev(close, bbLength)
+upperBB = basis + dev
+lowerBB = basis - dev
+
+// Plot Bollinger Bands
+plot(showBollinger and not showOnlyBands ? basis : na, color=color.orange, title="Bollinger Bands Basis")
+plot(showBollinger ? upperBB : na, color=color.green, title="Upper Bollinger Band")
+plot(showBollinger ? lowerBB : na, color=color.red, title="Lower Bollinger Band")
+
+// ----------------------- Parabolic SAR Calculation -----------------------
+sar = ta.sar(sarStart, sarIncrement, sarMax)
+
+// Determine SAR color based on its position relative to the price
+sarColor = sar > close ? color.red : color.green
+
+// Plot Parabolic SAR
+plot(showSAR ? sar : na, color=sarColor, style=plot.style_cross, title="Parabolic SAR")
+
+// ----------------------- Alerts -----------------------
+alertcondition(ta.crossover(close, upperBB), title="Price Crosses Above Upper BB", message="Price has crossed above the upper Bollinger Band!")
+alertcondition(ta.crossunder(close, lowerBB), title="Price Crosses Below Lower BB", message="Price has crossed below the lower Bollinger Band!")
+alertcondition(ta.crossover(close, baseLine), title="Price Crosses Above Base Line", message="Price has crossed above the Ichimoku Base Line!")
+alertcondition(ta.crossunder(close, baseLine), title="Price Crosses Below Base Line", message="Price has crossed below the Ichimoku Base Line!")
