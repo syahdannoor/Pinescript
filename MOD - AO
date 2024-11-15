@@ -1,0 +1,29 @@
+//@version=5
+indicator(title="MOD - Awesome Oscillator", shorttitle="MOD - AO", timeframe="", timeframe_gaps=true)
+
+// Input settings for threshold values
+greenThreshold = input.float(1.0, title="Green Threshold", minval=0.0)
+redThreshold = input.float(-1.0, title="Red Threshold", maxval=0.0)
+
+// Calculate the Awesome Oscillator
+ao = ta.sma(hl2, 5) - ta.sma(hl2, 34)
+
+// Determine the current color based on thresholds
+currentColor = ao > greenThreshold ? 1 : ao < redThreshold ? -1 : 0
+
+// Track the previous color state
+var int previousColor = 0
+colorChanged = currentColor != previousColor
+
+// Update the previous color state
+if (colorChanged)
+    previousColor := currentColor
+
+// Set the color based on the current state
+plotColor = currentColor == 1 ? color.new(color.green, 0) : currentColor == -1 ? color.new(color.red, 0) : color.new(color.gray, 0)
+
+// Plot the Awesome Oscillator with color conditions based on input thresholds
+plot(ao, color=plotColor, style=plot.style_columns)
+
+// Alert condition for color change
+alertcondition(colorChanged, title="AO Color Change", message="Awesome Oscillator color has changed!")
