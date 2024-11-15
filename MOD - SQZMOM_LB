@@ -1,0 +1,47 @@
+//@version=5
+indicator(shorttitle = "MOD - SQZMOM_LB", title="MOD - SQZMOM_LB - [LazyBear]", overlay=false)
+
+length = input(20, title="BB Length")
+mult = input(2.0, title="BB MultFactor")
+lengthKC = input(20, title="KC Length")
+multKC = input(1.5, title="KC MultFactor")
+
+useTrueRange = input(true, title="Use TrueRange (KC)")
+
+// Calculate BB
+source = close
+basis = ta.sma(source, length)
+dev = mult * ta.stdev(source, length)
+upperBB = basis + dev
+lowerBB = basis - dev
+
+// Calculate KC
+ma = ta.sma(source, lengthKC)
+trRange = useTrueRange ? ta.tr : (high - low)  // Renamed 'range' to 'trRange'
+rangema = ta.sma(trRange, lengthKC)
+upperKC = ma + rangema * multKC
+lowerKC = ma - rangema * multKC
+
+sqzOn  = (lowerBB > lowerKC) and (upperBB < upperKC)
+sqzOff = (lowerBB < lowerKC) and (upperBB > upperKC)
+noSqz  = not sqzOn and not sqzOff
+
+// Calculate the average of highest high, lowest low, and simple moving average
+highestLow = ta.highest(high, lengthKC)
+lowestLow = ta.lowest(low, lengthKC)
+averageValue = (highestLow + lowestLow + ta.sma(close, lengthKC)) / 3
+
+val = ta.linreg(source - averageValue, lengthKC, 0)
+
+// Determine histogram color
+var color bcolor = na // Initialize bcolor with type declaration
+bcolor := (val >= -0.5 and val <= 0.5) ? color.white : 
+          (val > 0 ? (val > nz(val[1]) ? color.lime : color.green) : 
+          (val < nz(val[1]) ? color.red : color.maroon))
+
+scolor = noSqz ? color.blue : (sqzOn ? color.black : color.gray) 
+plot(val, color=bcolor, style=plot.style_histogram, linewidth=4)
+plot(0, color=scolor, style=plot.style_cross, linewidth=2)
+
+// Alert conditions for color change
+alertcondition(bcolor != bcolor[1], title="Histogram Color Change", message="The histogram color has changed!")
