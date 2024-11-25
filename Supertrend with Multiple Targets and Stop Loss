@@ -33,10 +33,6 @@ downTrend = direction > 0
 // Track previous trend state
 var int previousDirection = na
 
-// Alert for trend change
-if alertTrendChange and (not na(previousDirection) and previousDirection != (upTrend ? 1 : -1))
-    alert('Trend has changed to ' + (upTrend ? 'Up' : 'Down'), alert.freq_once_per_bar)
-
 // Update the previous direction
 previousDirection := upTrend ? 1 : -1
 
@@ -155,3 +151,21 @@ else if downTrend
         alert('Target 3 Hit!', alert.freq_once_per_bar)
     if alertStopLossHit and close >= stopLossLevel
         alert('Stop Loss Hit!', alert.freq_once_per_bar)
+
+// Alert for trend change
+if alertTrendChange and (not na(previousDirection) and previousDirection != (upTrend ? 1 : -1))
+    trendType = upTrend ? "Buy" : "Sell"
+    stopLossValue = str.tostring(stopLossLevel, '#.###')
+    entryValue = str.tostring(close, '#.###')
+    targetValue1 = str.tostring(targetLevel1, '#.###')
+    targetValue2 = str.tostring(targetLevel2, '#.###')
+    targetValue3 = str.tostring(targetLevel3, '#.###')
+    
+    alertMessage = 'New : ' + trendType + '\n' +
+                   'SL : ' + stopLossValue + '\n' +
+                   'Ent : ' + entryValue + '\n' +
+                   'TP1 : ' + targetValue1 + '\n' +
+                   'TP2 : ' + targetValue2 + '\n' +
+                   'TP3 : ' + targetValue3
+    
+    alert(alertMessage, alert.freq_once_per_bar_close)
