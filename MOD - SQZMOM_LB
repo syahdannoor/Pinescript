@@ -64,9 +64,13 @@ if colorChange and alertColorChange
     alert('Histogram color changed! Value: ' + str.tostring(val), alert.freq_once_per_bar_close)
 
 // Alert condition for squeeze state change
-var bool lastSqzState = false
-lastSqzState := sqzOn[1] or sqzOff[1] // Get the previous squeeze state
+var bool lastSqzState = false // Initialize to false
+// Update lastSqzState to the current state
+currentSqzState = sqzOn ? true : sqzOff ? false : lastSqzState
 
 // Create alert condition for squeeze state change
-if (sqzOn or sqzOff) and not lastSqzState and alertSqueezeChange
-    alert('Squeeze state changed! Current State: ' + (sqzOn ? 'ON' : 'OFF'), alert.freq_once_per_bar_close)
+if (currentSqzState != lastSqzState) and alertSqueezeChange
+    alert('Squeeze state changed! Current State: ' + (currentSqzState ? 'ON' : 'OFF'), alert.freq_once_per_bar_close)
+
+// Update lastSqzState for the next bar
+lastSqzState := currentSqzState
