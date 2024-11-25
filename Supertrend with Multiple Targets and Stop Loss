@@ -1,0 +1,132 @@
+//@version=5
+indicator("Supertrend with Multiple Targets and Stop Loss", overlay = true, max_lines_count = 40)
+
+// Input parameters for Supertrend
+atrPeriod = input.int(10, "ATR Length", minval = 1)
+factor = input.float(2.5, "Factor", minval = 0.01, step = 0.01)
+
+// Hardcoded target multipliers
+targetMultiplier1 = 3
+targetMultiplier2 = 5
+targetMultiplier3 = 7
+
+// Hardcoded stop loss multiplier
+stopLossMultiplier = 3
+
+// Calculate Supertrend
+[supertrend, direction] = ta.supertrend(factor, atrPeriod)
+
+// Determine if the trend is up or down
+upTrend = direction < 0
+downTrend = direction > 0
+
+// Calculate ATR for targets and stop loss
+atrValue = ta.atr(atrPeriod)
+
+// Initialize target and stop loss levels
+var float targetLevel1 = na
+var float targetLevel2 = na
+var float targetLevel3 = na
+var float stopLossLevel = na
+
+// Initialize counters for lines and labels
+var int count_up = 0
+var int count_down = 0
+
+// Calculate target and stop loss levels
+if (upTrend)
+    targetLevel1 := close + atrValue * targetMultiplier1
+    targetLevel2 := close + atrValue * targetMultiplier2
+    targetLevel3 := close + atrValue * targetMultiplier3
+    stopLossLevel := close - atrValue * stopLossMultiplier
+    count_up += 1
+    count_down := 0
+else if (downTrend)
+    targetLevel1 := close - atrValue * targetMultiplier1
+    targetLevel2 := close - atrValue * targetMultiplier2
+    targetLevel3 := close - atrValue * targetMultiplier3
+    stopLossLevel := close + atrValue * stopLossMultiplier
+    count_down += 1
+    count_up := 0
+
+// Draw lines and labels for targets and stop loss
+var line stopLossLine = na
+var line entryLine = na
+var line targetLine1 = na
+var line targetLine2 = na
+var line targetLine3 = na
+var label stopLossLabel = na
+var label entryLabel = na
+var label targetLabel1 = na
+var label targetLabel2 = na
+var label targetLabel3 = na
+
+// Clear previous lines and labels if a new trend is confirmed
+if (upTrend and count_up == 1)
+    // Clear previous lines and labels
+    line.delete(stopLossLine)
+    line.delete(entryLine)
+    line.delete(targetLine1)
+    line.delete(targetLine2)
+    line.delete(targetLine3)
+    label.delete(stopLossLabel)
+    label.delete(entryLabel)
+    label.delete(targetLabel1)
+    label.delete(targetLabel2)
+    label.delete(targetLabel3)
+
+    // Draw new lines 20 bars into the future
+    stopLossLine := line.new(bar_index, stopLossLevel, bar_index + 80, stopLossLevel, color=color.red, width=2)
+    entryLine := line.new(bar_index, close, bar_index + 80, close, color=color.green, width=2)
+    targetLine1 := line.new(bar_index, targetLevel1, bar_index + 80, targetLevel1, color=color.blue, width=2)
+    targetLine2 := line.new(bar_index, targetLevel2, bar_index + 80, targetLevel2, color=color.blue, width=2)
+    targetLine3 := line.new(bar_index, targetLevel3, bar_index + 80, targetLevel3, color=color.blue, width=2)
+
+    // Draw new labels with three decimal places
+    stopLossLabel := label.new(bar_index + 80, stopLossLevel, "Stop Loss: " + str.tostring(stopLossLevel, "#.###"), style=label.style_label_left, color=color.red, textcolor=color.white)
+    entryLabel := label.new(bar_index + 80, close, "Entry: " + str.tostring(close, "#.###"), style=label.style_label_left, color=color.green, textcolor=color.white)
+    targetLabel1 := label.new(bar_index + 80, targetLevel1, "Target 1: " + str.tostring(targetLevel1, "#.###"), style=label.style_label_left, color=color.blue, textcolor=color.white)
+    targetLabel2 := label.new(bar_index + 80, targetLevel2, "Target 2: " + str.tostring(targetLevel2, "#.###"), style=label.style_label_left, color=color.blue, textcolor=color.white)
+    targetLabel3 := label.new(bar_index + 80, targetLevel3, "Target 3: " + str.tostring(targetLevel3, "#.###"), style=label.style_label_left, color=color.blue, textcolor=color.white)
+
+if (downTrend and count_down == 1)
+    // Clear previous lines and labels
+    line.delete(stopLossLine)
+    line.delete(entryLine)
+    line.delete(targetLine1)
+    line.delete(targetLine2)
+    line.delete(targetLine3)
+    label.delete(stopLossLabel)
+    label.delete(entryLabel)
+    label.delete(targetLabel1)
+    label.delete(targetLabel2)
+    label.delete(targetLabel3)
+
+    // Draw new lines 20 bars into the future
+    stopLossLine := line.new(bar_index, stopLossLevel, bar_index + 80, stopLossLevel, color=color.red, width=2)
+    entryLine := line.new(bar_index, close, bar_index + 80, close, color=color.green, width=2)
+    targetLine1 := line.new(bar_index, targetLevel1, bar_index + 80, targetLevel1, color=color.blue, width=2)
+    targetLine2 := line.new(bar_index, targetLevel2, bar_index + 80, targetLevel2, color=color.blue, width=2)
+    targetLine3 := line.new(bar_index, targetLevel3, bar_index + 80, targetLevel3, color=color.blue, width=2)
+
+    // Draw new labels with three decimal places
+    stopLossLabel := label.new(bar_index + 80, stopLossLevel, "Stop Loss: " + str.tostring(stopLossLevel, "#.###"), style=label.style_label_left, color=color.red, textcolor=color.white)
+    entryLabel := label.new(bar_index + 80, close, "Entry: " + str.tostring(close, "#.###"), style=label.style_label_left, color=color.green, textcolor=color.white)
+    targetLabel1 := label.new(bar_index + 80, targetLevel1, "Target 1: " + str.tostring(targetLevel1, "#.###"), style=label.style_label_left, color=color.blue, textcolor=color.white)
+    targetLabel2 := label.new(bar_index + 80, targetLevel2, "Target 2: " + str.tostring(targetLevel2, "#.###"), style=label.style_label_left, color=color.blue, textcolor=color.white)
+    targetLabel3 := label.new(bar_index + 80, targetLevel3, "Target 3: " + str.tostring(targetLevel3, "#.###"), style=label.style_label_left, color=color.blue, textcolor=color.white)
+
+// Plot Supertrend
+plot(upTrend ? supertrend : na, "Up Trend", color=color.green, style=plot.style_linebr)
+plot(downTrend ? supertrend : na, "Down Trend", color=color.red, style=plot.style_linebr)
+
+// Alerts for trend changes
+alertcondition(direction[1] > direction, title='Downtrend to Uptrend', message='The Supertrend value switched from Downtrend to Uptrend')
+alertcondition(direction[1] < direction, title='Uptrend to Downtrend', message='The Supertrend value switched from Uptrend to Downtrend')
+alertcondition(direction[1] != direction, title='Trend Change', message='The Supertrend value switched from Uptrend to Downtrend or vice versa')
+
+// Alerts for target and stop loss hit
+alertcondition(close >= targetLevel1, title="Target 1 Hit", message="Target Level 1 Reached!")
+alertcondition(close >= targetLevel2, title="Target 2 Hit", message="Target Level 2 Reached!")
+alertcondition(close >= targetLevel3, title="Target 3 Hit", message="Target Level 3 Reached!")
+alertcondition(close <= stopLossLevel, title="Stop Loss Hit", message="Stop Loss Level Reached!")
