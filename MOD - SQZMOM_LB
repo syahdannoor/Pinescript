@@ -1,12 +1,20 @@
-//@version=5
-indicator(shorttitle = "MOD - SQZMOM_LB", title="MOD - SQZMOM_LB - [LazyBear]", overlay=false)
+//@version=6
+indicator(shorttitle = 'MOD - SQZMOM_LB', title = 'MOD - SQZMOM_LB - [LazyBear]', overlay = false)
 
-length = input(20, title="BB Length")
-mult = input(2.0, title="BB MultFactor")
-lengthKC = input(20, title="KC Length")
-multKC = input(1.5, title="KC MultFactor")
+// Input settings
+length = input(20, title = 'BB Length')
+mult = input(2.0, title = 'BB MultFactor')
+lengthKC = input(20, title = 'KC Length')
+multKC = input(1.5, title = 'KC MultFactor')
+useTrueRange = input(true, title = 'Use TrueRange (KC)')
 
-useTrueRange = input(true, title="Use TrueRange (KC)")
+// Customizable thresholds
+lowerThreshold = input(-1, title = 'Lower Threshold')
+upperThreshold = input(1, title = 'Upper Threshold')
+
+// Alert toggles
+alertColorChange = input(true, title = 'Enable Histogram Color Change Alert')
+alertSqueezeChange = input(true, title = 'Enable Squeeze State Change Alert')
 
 // Calculate BB
 source = close
@@ -17,31 +25,48 @@ lowerBB = basis - dev
 
 // Calculate KC
 ma = ta.sma(source, lengthKC)
-trRange = useTrueRange ? ta.tr : (high - low)  // Renamed 'range' to 'trRange'
+trRange = useTrueRange ? ta.tr : high - low
 rangema = ta.sma(trRange, lengthKC)
 upperKC = ma + rangema * multKC
 lowerKC = ma - rangema * multKC
 
-sqzOn  = (lowerBB > lowerKC) and (upperBB < upperKC)
-sqzOff = (lowerBB < lowerKC) and (upperBB > upperKC)
-noSqz  = not sqzOn and not sqzOff
+sqzOn = lowerBB > lowerKC and upperBB < upperKC
+sqzOff = lowerBB < lowerKC and upperBB > upperKC
+noSqz = not sqzOn and not sqzOff
 
 // Calculate the average of highest high, lowest low, and simple moving average
 highestLow = ta.highest(high, lengthKC)
 lowestLow = ta.lowest(low, lengthKC)
 averageValue = (highestLow + lowestLow + ta.sma(close, lengthKC)) / 3
 
-val = ta.linreg(source - averageValue, lengthKC, 0)
+// Calculate val and limit it to 1 decimal place
+val = math.round(ta.linreg(source - averageValue, lengthKC, 0) * 10) / 10
 
 // Determine histogram color
-var color bcolor = na // Initialize bcolor with type declaration
-bcolor := (val >= -0.5 and val <= 0.5) ? color.white : 
-          (val > 0 ? (val > nz(val[1]) ? color.lime : color.green) : 
-          (val < nz(val[1]) ? color.red : color.maroon))
+var color bcolor = na
+bcolor := val >= lowerThreshold and val <= upperThreshold ? color.black : val > upperThreshold ? val > nz(val[1]) ? color.lime : color.green : val < nz(val[1]) ? color.red : color.maroon
 
-scolor = noSqz ? color.blue : (sqzOn ? color.black : color.gray) 
-plot(val, color=bcolor, style=plot.style_histogram, linewidth=4)
-plot(0, color=scolor, style=plot.style_cross, linewidth=2)
+scolor = noSqz ? color.blue : sqzOn ? color.black : color.white
 
-// Alert conditions for color change
-alertcondition(bcolor != bcolor[1], title="Histogram Color Change", message="The histogram color has changed!")
+// Plotting the histogram with a title
+plot(val, color = bcolor, style = plot.style_histogram, linewidth = 4, title = 'SQZMOM Histogram')
+
+// Plotting the squeeze as dots
+plot(0, color = scolor, style = plot.style_circles, linewidth = 2, title = 'Squeeze Indicator')
+
+// Alert condition for histogram color change
+var color lastColor = na // Store the previous color
+lastColor := bcolor[1] // Get the previous color
+
+// Create alert condition for color change
+colorChange = bcolor != lastColor
+if colorChange and alertColorChange
+    alert('Histogram color changed! Value: ' + str.tostring(val), alert.freq_once_per_bar_close)
+
+// Alert condition for squeeze state change
+var bool lastSqzState = false
+lastSqzState := sqzOn[1] or sqzOff[1] // Get the previous squeeze state
+
+// Create alert condition for squeeze state change
+if (sqzOn or sqzOff) and not lastSqzState and alertSqueezeChange
+    alert('Squeeze state changed! Current State: ' + (sqzOn ? 'ON' : 'OFF'), alert.freq_once_per_bar_close)
