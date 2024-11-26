@@ -15,10 +15,6 @@ stopLossMultiplier = 3
 
 // Input switches for alerts
 alertTrendChange = input.bool(true, title='Enable Trend Change Alert')
-alertTarget1Hit = input.bool(true, title='Enable Target 1 Hit Alert')
-alertTarget2Hit = input.bool(true, title='Enable Target 2 Hit Alert')
-alertTarget3Hit = input.bool(true, title='Enable Target 3 Hit Alert')
-alertStopLossHit = input.bool(true, title='Enable Stop Loss Hit Alert')
 
 // Calculate Supertrend
 [supertrend, direction] = ta.supertrend(factor, atrPeriod)
@@ -40,6 +36,7 @@ previousDirection := upTrend ? 1 : -1
 atrValue = ta.atr(atrPeriod)
 
 // Initialize target and stop loss levels
+var float entryPrice = na
 var float targetLevel1 = na
 var float targetLevel2 = na
 var float targetLevel3 = na
@@ -49,8 +46,12 @@ var float stopLossLevel = na
 var int count_up = 0
 var int count_down = 0
 
+// Initialize a new variable to track if new lines and labels are drawn
+var bool newLinesDrawn = false
+
 // Calculate target and stop loss levels
 if upTrend
+    entryPrice := close
     targetLevel1 := close + atrValue * targetMultiplier1
     targetLevel2 := close + atrValue * targetMultiplier2
     targetLevel3 := close + atrValue * targetMultiplier3
@@ -58,6 +59,7 @@ if upTrend
     count_up := count_up + 1
     count_down := 0
 else if downTrend
+    entryPrice := close
     targetLevel1 := close - atrValue * targetMultiplier1
     targetLevel2 := close - atrValue * targetMultiplier2
     targetLevel3 := close - atrValue * targetMultiplier3
@@ -96,9 +98,12 @@ if upTrend and count_up == 1
     entryLine := line.new(bar_index, close, bar_index + 40, close, color = color.green, width = 2)
     targetLine1 := line.new(bar_index, targetLevel1, bar_index + 40, targetLevel1, color = color.blue, width = 2)
     targetLine2 := line.new(bar_index, targetLevel2, bar_index + 40, targetLevel2, color = color.blue, width = 2)
-    targetLine3 := line.new(bar_index, targetLevel3, bar_index + 40, targetLevel3, color = color.blue, width =  2)
+    targetLine3 := line.new(bar_index, targetLevel3, bar_index + 40, targetLevel3, color = color.blue, width = 2)
 
-// Draw new labels with three decimal places
+    // Set the newLinesDrawn flag to true
+    newLinesDrawn := true
+
+    // Draw new labels with three decimal places
     stopLossLabel := label.new(bar_index + 40, stopLossLevel, 'Stop Loss: ' + str.tostring(stopLossLevel, '#.###'), style = label.style_label_left, color = color.red, textcolor = color.white)
     entryLabel := label.new(bar_index + 40, close, 'Entry: ' + str.tostring(close, '#.###'), style = label.style_label_left, color = color.green, textcolor = color.white)
     targetLabel1 := label.new(bar_index + 40, targetLevel1, 'Target 1: ' + str.tostring(targetLevel1, '#.###'), style = label.style_label_left, color = color.blue, textcolor = color.white)
@@ -125,35 +130,18 @@ if downTrend and count_down == 1
     targetLine2 := line.new(bar_index, targetLevel2, bar_index + 40, targetLevel2, color = color.blue, width = 2)
     targetLine3 := line.new(bar_index, targetLevel3, bar_index + 40, targetLevel3, color = color.blue, width = 2)
 
+    // Set the newLinesDrawn flag to true
+    newLinesDrawn := true
+
     // Draw new labels with three decimal places
-    stopLossLabel := label.new(bar_index + 40, stopLossLevel, 'Stop Loss: ' + str.tostring(stopLossLevel, '#.###'), style = label.style_label_left, color = color.red, textcolor = color.white)
+    stopLossLabel := label.new(bar_index + 40, stopLossLevel, 'SL: ' + str.tostring(stopLossLevel, '#.###'), style = label.style_label_left, color = color.red, textcolor = color.white)
     entryLabel := label.new(bar_index + 40, close, 'Entry: ' + str.tostring(close, '#.###'), style = label.style_label_left, color = color.green, textcolor = color.white)
-    targetLabel1 := label.new(bar_index + 40, targetLevel1, 'Target 1: ' + str.tostring(targetLevel1, '#.###'), style = label.style_label_left, color = color.blue, textcolor = color.white)
-    targetLabel2 := label.new(bar_index + 40, targetLevel2, 'Target 2: ' + str.tostring(targetLevel2, '#.###'), style = label.style_label_left, color = color.blue, textcolor = color.white)
-    targetLabel3 := label.new(bar_index + 40, targetLevel3, 'Target 3: ' + str.tostring(targetLevel3, '#.###'), style = label.style_label_left, color = color.blue, textcolor = color.white)
+    targetLabel1 := label.new(bar_index + 40, targetLevel1, 'TP 1: ' + str.tostring(targetLevel1, '#.###'), style = label.style_label_left, color = color.blue, textcolor = color.white)
+    targetLabel2 := label.new(bar_index + 40, targetLevel2, 'TP 2: ' + str.tostring(targetLevel2, '#.###'), style = label.style_label_left, color = color.blue, textcolor = color.white)
+    targetLabel3 := label.new(bar_index + 40, targetLevel3, 'TP 3: ' + str.tostring(targetLevel3, '#.###'), style = label.style_label_left, color = color.blue, textcolor = color.white)
 
-// Alerts for target/stop loss hits
-if upTrend
-    if alertTarget1Hit and close >= targetLevel1
-        alert('Target 1 Hit!', alert.freq_once_per_bar)
-    if alertTarget2Hit and close >= targetLevel2
-        alert('Target 2 Hit!', alert.freq_once_per_bar)
-    if alertTarget3Hit and close >= targetLevel3
-        alert('Target 3 Hit!', alert.freq_once_per_bar)
-    if alertStopLossHit and close <= stopLossLevel
-        alert('Stop Loss Hit!', alert.freq_once_per_bar)
-else if downTrend
-    if alertTarget1Hit and close <= targetLevel1
-        alert('Target 1 Hit!', alert.freq_once_per_bar)
-    if alertTarget2Hit and close <= targetLevel2
-        alert('Target 2 Hit!', alert.freq_once_per_bar)
-    if alertTarget3Hit and close <= targetLevel3
-        alert('Target 3 Hit!', alert.freq_once_per_bar)
-    if alertStopLossHit and close >= stopLossLevel
-        alert('Stop Loss Hit!', alert.freq_once_per_bar)
-
-// Alert for trend change
-if alertTrendChange and (not na(previousDirection) and previousDirection != (upTrend ? 1 : -1))
+// Alert for trend change when new lines and labels are drawn
+if newLinesDrawn
     trendType = upTrend ? "Buy" : "Sell"
     stopLossValue = str.tostring(stopLossLevel, '#.###')
     entryValue = str.tostring(close, '#.###')
@@ -161,7 +149,7 @@ if alertTrendChange and (not na(previousDirection) and previousDirection != (upT
     targetValue2 = str.tostring(targetLevel2, '#.###')
     targetValue3 = str.tostring(targetLevel3, '#.###')
     
-    alertMessage = 'New : ' + trendType + '\n' +
+    alertMessage = 'Trend : ' + trendType + '\n' +
                    'SL : ' + stopLossValue + '\n' +
                    'Ent : ' + entryValue + '\n' +
                    'TP1 : ' + targetValue1 + '\n' +
@@ -169,3 +157,6 @@ if alertTrendChange and (not na(previousDirection) and previousDirection != (upT
                    'TP3 : ' + targetValue3
     
     alert(alertMessage, alert.freq_once_per_bar_close)
+    
+    // Reset the newLinesDrawn flag
+    newLinesDrawn := false
